@@ -1,4 +1,4 @@
-# vue-chatApp
+# Real-Time Chat Application
 
 A simple real-time chat application built with **Vue.js** on the frontend and **Express.js** with **Socket.io** on the backend. This app allows users to engage in both private and group conversations, providing an interactive messaging experience with message persistence stored in **MongoDB**.
 
@@ -21,3 +21,13 @@ A simple real-time chat application built with **Vue.js** on the frontend and **
 
    ```bash
    git clone https://github.com/yourusername/chat-app.git
+
+2. Navigate to the project directory:
+
+    ```bash
+    cd chat-app
+3. Frontend and backend setup:
+
+    For Backend (server): Please follow the instructions in the README.md file located in the server directory.
+
+    For Frontend (client): Please follow the instructions in the README.md file located in the client directory.
