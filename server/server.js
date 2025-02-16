@@ -1,6 +1,7 @@
 
 const express=require("express")
 const app=express()
+require("dotenv").config();
 const cookieParser=require("cookie-parser")
 const jwt=require("jsonwebtoken")
 const http=require("http")
@@ -10,13 +11,13 @@ const session=require("express-session")
 const bodyParser=require("body-parser")
 const server=http.createServer(app)
 const io=new Server(server,{cors:{
-    origin:process.env.MONGODB_URL,
+    origin:process.env.CLIENT,
     methods:["GET","POST","PUT","DELETE"],
     credentials: true,
 }})
 
 
-require("dotenv").config();
+
 const {MongoClient,ObjectId}=require("mongodb")
 const db=new MongoClient(process.env.MONGODB_URL)
 const MongoStore=require("connect-mongo")
@@ -26,13 +27,13 @@ const sessionMiddleware = session({
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: "mongodb://localhost:27017/chatApp",
+      mongoUrl: `${process.env.MONGODB_URL}/chatApp`,
       collectionName: "sessions",
     }),
   });
 
 
-app.use(cors({origin: "http://localhost:5173", credentials: true }))
+app.use(cors({origin: process.env.CLIENT, credentials: true }))
 app.use(cookieParser())
 app.use(sessionMiddleware)
 app.use(express.json())
