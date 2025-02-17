@@ -2,7 +2,7 @@
     <div class="container">
         <div class="main">
             <Menu @set-chat="handleSelect" :socket="socket"/>
-            <ChatBox :chat="selectedChat" :socket="socket"/>
+            <ChatBox :chat="selectedChat" :online="online"  :socket="socket"/>
         </div>
         
     </div>
@@ -21,6 +21,7 @@ export default {
     data(){
         return{
             selectedChat:"",
+            online:0,
             socket:null
         }
     },
@@ -31,15 +32,16 @@ export default {
     },
     methods:{
         handleSelect(user){
+            this.selectedChat=user.user
+            this.online=user.online
             
-            this.selectedChat=user
         }
     },
     beforeMount(){
         this.socket=io(import.meta.env.VITE_API_URL, {
             withCredentials: true,
         })
-        console.log(this.socket)
+        
     },
     beforeUnmount(){
         if (this.socket) {

@@ -107,10 +107,24 @@ io.on("connection",(socket)=>{
         
         socket.to(onlineUsers[data.to]).emit("typing",data)
     })
-    socket.on("disconect",()=>{
-        delete onlineUsers[socket.id]
+    socket.on("logout",(data)=>{
+      delete onlineUsers[socket.id]
+      for(let i=0;i<data.friends.length;i++){
+        socket.to(onlineUsers[data.friends[i].user]).emit("offline",{user:data.username})
+      }
+    })
+    socket.on("online",(data)=>{
+      
+      for(let i=0;i<data.friends.length;i++){
+        socket.to(onlineUsers[data.friends[i].user]).emit("online",{user:data.username})
+      }
+    })
+    socket.on("disconnect",()=>{
+      
+        delete onlineUsers[socketSession.username]
     })
     delete onlineUsers["undefined"]
+    
 })
 
 app.post("/login",async (req,res)=>{
@@ -131,7 +145,7 @@ app.post("/login",async (req,res)=>{
     }
 })
 app.delete("/login",(req,res)=>{
-   
+    
     res.clearCookie("session").clearCookie("Session").clearCookie("token").status(200).send("Logged out!")
     return
 })
@@ -187,31 +201,33 @@ app.get("/sendFriendRequest/:id",authToken,async (req,res)=>{
 })
 app.get("/friends/:id",authToken,async(req,res)=>{
     await db.connect()
-    const friends = await db.db("chatApp")
-  .collection("users")
-  .aggregate([
-    {
-      $match: {
-        username: req.params.id // Match the specific user by username
-      }
-    },
-    {
-      $project: {
-        friends: {
-          $filter: {
-            input: "$friends", // The array field to filter
-            as: "friend", // Alias for each element in the array
-            cond: { $eq: ["$$friend.accepted", 1] } // Condition to include only elements with accepted: 0
+    let friends = await db.db("chatApp")
+      .collection("users")
+      .aggregate([
+        {
+          $match: {
+            username: req.params.id 
           }
         },
-        _id: 0 // Exclude the _id field from the result
-      }
-    }
-  ])
-  .toArray();
-
-    
-    res.json(friends[0]?.friends)
+        {
+          $project: {
+            friends: {
+              $filter: {
+                input: "$friends", 
+                as: "friend", 
+                cond: { $eq: ["$$friend.accepted", 1] } 
+              }
+            },
+            _id: 0
+          }
+        }
+      ])
+      .toArray();
+      friends=friends[0]?.friends
+    for(let i=0;i<friends.length;i++){
+      friends[i]["online"]=onlineUsers[friends[i].user]?1:0
+    } 
+    res.json(friends || [])
 })
 app.get("/requests/:id",authToken,async(req,res)=>{
     await db.connect()
@@ -248,7 +264,33 @@ app.get("/acceptFriendRequest/:id",authToken,async(req,res)=>{
     
     res.send("good")
 })
+app.delete("/friend",authToken,async(req,res)=>{
+  try {
+    const { username } = req.query; 
+    const sessionUsername = req.session.username; 
 
+    if (!username || !sessionUsername) {
+      return res.status(400).json({ message: "Missing required parameters." });
+    }
+
+    await db.connect();
+    const usersCollection = db.db("chatApp").collection("users"); 
+
+    
+    await usersCollection.updateOne(
+      { username: sessionUsername },
+      { $pull: { friends: { user: username } } }
+    );
+    await usersCollection.updateOne(
+      { username: username },
+      { $pull: { friends: { user: sessionUsername } } }
+    );
+    res.json({ message: "Friend removed successfully." });
+  } catch (error) {
+    console.error("Error removing friend:", error);
+    res.status(500).json({ message: "Server error." });
+  } 
+})
 app.get("/getMessages",authToken,async(req,res)=>{
     await db.connect()
     const messages= await db.db("chatApp").collection("messages").find({

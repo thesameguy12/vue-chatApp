@@ -53,6 +53,11 @@ export default {
             required:true
 
         },
+        online:{
+            type:Number,
+            required:true
+
+        },
         socket:{
             type:Object,
             required:true
@@ -160,6 +165,7 @@ export default {
         }
     },
     mounted(){
+        
         this.socket.on("message",(data)=>{
             this.chatMessages[data.from].chatHistory.push({
                 from:data.from,
