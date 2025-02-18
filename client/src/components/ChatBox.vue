@@ -216,6 +216,7 @@ export default {
     watch:{
         chat(){
             if(this.chatMessages[this.chat]===undefined){
+                this.moreMessages=true
                 axios.get(`/getMessages?chat=${encodeURIComponent(this.chat)}&skip=0`).then((res)=>{
                         this.chatMessages[this.chat]={
                             message:"",
@@ -223,6 +224,9 @@ export default {
                             typing:false
                         }
                         this.chatMessages[this.chat].chatHistory=res.data
+                        if(res.data.length<=24){
+                            this.moreMessages=false
+                        }
                         this.$nextTick(()=>{
                             this.setObserver()
                             this.scrollToBottom(false)

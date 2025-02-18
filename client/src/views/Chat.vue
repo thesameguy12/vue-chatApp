@@ -25,6 +25,12 @@ export default {
             socket:null
         }
     },
+    mounted(){
+        this.socket.on("updatedToken",(data)=>{
+            console.log(data)
+            Cookies.set("token",data.token)
+        })
+    },
     beforeRouteEnter(){
         if(!Cookies.get("session")){
             return "/login"
@@ -47,7 +53,8 @@ export default {
         if (this.socket) {
             this.socket.disconnect();
         }
-    }
+    },
+    
 }
 </script>
 

@@ -65,24 +65,41 @@ function authToken(req,res,next){
         return res.sendStatus(400)
     }
 }
-function authSession(req,res,next){
-    const sessionToken=req.cookies.session
-    if(sessionToken){
-        jwt.verify(sessionToken,process.env.SECRET_KEY,(err,decode)=>{
-            if(!err){
-                res.cookie("session",jwt.sign({id:req.session.id},process.env.SECRET_KEY,{expiresIn:'3h'}),{httpOnly:false})
-            }
-            
-        })
-    }
-    return next()
-}
-
-
 
 var onlineUsers={}
+const cookie=require("cookie")
 io.use((socket,next)=>{
-    sessionMiddleware(socket.request, {}, next);
+    sessionMiddleware(socket.request, {}, next); 
+})
+io.use((socket,next)=>{
+  
+  const cookies=cookie.parse(socket.handshake.headers.cookie)
+  const sessionToken=cookies.session
+    const token=cookies.token
+    
+    if(token){
+        jwt.verify(token,process.env.REFRESH_KEY,(err,decoded)=>{
+            if(err){
+                if(sessionToken){
+                    jwt.verify(sessionToken,process.env.SECRET_KEY,(err,decode)=>{
+                        if(!err){
+                                const newToken=jwt.sign({username:socket.request.session.username},process.env.REFRESH_KEY,{expiresIn:'5m'})
+                                socket.emit("updatedToken",{token:newToken})
+                                return next()
+                        }else{  
+                            socket.emit("invalidAuth")
+                            return
+                        }
+                    })
+                }
+            }else{
+                return next()
+            }
+        })
+    }else{
+      socket.emit("invalidAuth")
+      return
+    }
 })
 io.on("connection",(socket)=>{
     const socketSession=socket.request.session
@@ -136,7 +153,7 @@ app.post("/login",async (req,res)=>{
     if(user.length>0){
         req.session.sessionID=req.session.id
         req.session.username=username
-        res.cookie("session",jwt.sign({id:req.session.id},process.env.SECRET_KEY,{expiresIn:'3h'}),{httpOnly:false})
+        res.cookie("session",jwt.sign({id:req.session.id},process.env.SECRET_KEY,{expiresIn:'365d'}),{httpOnly:false})
         .cookie("token",jwt.sign({username:username},process.env.REFRESH_KEY,{expiresIn:'5m'}),{httpOnly:false})
         .status(200).send()
         return
@@ -293,13 +310,14 @@ app.delete("/friend",authToken,async(req,res)=>{
 })
 app.get("/getMessages",authToken,async(req,res)=>{
     await db.connect()
+      
     const messages= await db.db("chatApp").collection("messages").find({
         $or: [
           { $and: [{ to: req.session.username }, { from:req.query.chat  }] },
           { $and: [{ to: req.query.chat }, { from: req.session.username }] }
         ]
-      }).skip(parseInt(req.query.skip)).limit(25).toArray()
-    res.json(messages)
+      }).sort({time:-1}).skip(parseInt(req.query.skip)).limit(25).toArray()
+    res.json(messages.reverse())
 })
 
 server.listen(process.env.PORT || 3000,()=>{
