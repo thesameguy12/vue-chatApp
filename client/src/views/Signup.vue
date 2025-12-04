@@ -39,7 +39,7 @@ export default {
             this.usernameError=""
             clearTimeout(this.typingTimer)
             this.typingTimer=setTimeout(()=>{
-                axios.get(`http://localhost:3000/signup/${this.username}`).then((res)=>{
+                axios.get(`/signup/${this.username}`).then((res)=>{
                     
                     if(res.data){
                         this.usernameError=res.data
@@ -78,7 +78,7 @@ export default {
             if(this.usernameError || this.passwordError){
                 return
             }
-            axios.post(`http://localhost:3000/signup`,{username:this.username,password:this.password}).then((res)=>{
+            axios.post(`/signup`,{username:this.username,password:this.password}).then((res)=>{
                
                 if(res.status===200){
                     

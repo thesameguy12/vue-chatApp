@@ -97,7 +97,7 @@ export default {
             this.selectedChat=user.user
         },
         getFriends(){
-            axios.get(`http://localhost:3000/friends/${this.username}`).then((res)=>{
+            axios.get(`/friends/${this.username}`).then((res)=>{
                 this.friends=res.data
                 this.socket.emit("online",{username:this.username,friends:this.friends})
             }).catch(()=>{

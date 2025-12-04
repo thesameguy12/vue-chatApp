@@ -72,8 +72,8 @@ io.use((socket,next)=>{
     sessionMiddleware(socket.request, {}, next); 
 })
 io.use((socket,next)=>{
-  
-  const cookies=cookie.parse(socket.handshake.headers.cookie)
+  const cookieHeader = socket.handshake.headers.cookie || "";
+  const cookies=cookie.parse(cookieHeader)
   const sessionToken=cookies.session
     const token=cookies.token
     
@@ -241,10 +241,13 @@ app.get("/friends/:id",authToken,async(req,res)=>{
       ])
       .toArray();
       friends=friends[0]?.friends
-    for(let i=0;i<friends.length;i++){
-      friends[i]["online"]=onlineUsers[friends[i].user]?1:0
-    } 
-    res.json(friends || [])
+      if(!friends){
+        friends=[]
+      }
+      for(let i=0;i<friends.length;i++){
+        friends[i]["online"]=onlineUsers[friends[i].user]?1:0
+      } 
+      res.json(friends || [])
 })
 app.get("/requests/:id",authToken,async(req,res)=>{
     await db.connect()
@@ -320,9 +323,25 @@ app.get("/getMessages",authToken,async(req,res)=>{
     res.json(messages.reverse())
 })
 
-server.listen(process.env.PORT || 3000,()=>{
-    console.log(`Server running on port ${process.env.PORT || 3000}`)
-})
+
+
+const startServer = async () => {
+  try {
+    await db.connect();
+    console.log("Mongo connected!");
+
+    server.listen(process.env.PORT || 3000, () => {
+      console.log(`Server running on port ${process.env.PORT || 3000}`);
+    });
+  } catch (err) {
+    console.log("Mongo not ready, retrying in 2s...");
+    setTimeout(startServer, 2000);
+  }
+};
+
+startServer();
+
+
 process.on("SIGINT", async () => {
     
     await db.close();

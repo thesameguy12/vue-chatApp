@@ -18,6 +18,7 @@
 import axios from "axios";
 import {io} from "socket.io-client"
 import { RouterLink } from "vue-router";
+const API_URL = import.meta.env.VITE_API_URL;
 export default {
     data(){
         return{
@@ -33,7 +34,7 @@ export default {
         RouterLink
     },
     mounted(){
-        this.socket=io("http://localhost:3000")
+        this.socket=io(API_URL)
 
     },
     watch:{
@@ -59,7 +60,7 @@ export default {
             if(this.usernameError || this.passwordError){
                 return
             }
-            axios.post(`http://localhost:3000/login`,{username:this.username,password:this.password},{ withCredentials: true }).then((res)=>{
+            axios.post(`/login`,{username:this.username,password:this.password},{ withCredentials: true }).then((res)=>{
                 
                 if(res.data.length>0){
                     this.loginError=res.data

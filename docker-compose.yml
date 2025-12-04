@@ -1,0 +1,42 @@
+services:
+  mongo:
+    image: mongo:6
+    container_name: chat-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - chatnet
+  
+  server:
+    build: ./server
+    container_name: chat_server
+    restart: always
+    env_file: ./server/.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017
+    networks:
+      - chatnet
+  
+  client:
+    build: ./client
+    container_name: chat_client
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+    networks:
+      - chatnet
+
+networks:
+  chatnet:
+
+volumes:
+  mongo_data:
